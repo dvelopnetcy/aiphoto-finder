@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "AI Photo Finder",
+    "slug": "aiphoto-finder",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icons/icon.png",
+    "scheme": "aiphotofinder",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/icons/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#121212"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.company.aiphotofinder",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "AI Photo Finder needs access to your photos to build a private, on-device search index.",
+        "NSMicrophoneUsageDescription": "AI Photo Finder needs access to your microphone for voice search. Your audio is processed on-device and is never recorded."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/adaptive-icon.png",
+        "backgroundColor": "#121212"
+      },
+      "package": "com.company.aiphotofinder",
+      "versionCode": 2, 
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.DETECT_SCREEN_CAPTURE"
+      ]
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

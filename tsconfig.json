@@ -1,0 +1,18 @@
+// File: tsconfig.json (Definitive Final Version)
+{
+  "compilerOptions": {
+    // This tells TypeScript that our project's root is the 'src' directory
+    "baseUrl": "src",
+    // This defines the '@/' alias for TypeScript
+    "paths": {
+      "@/*": ["*"]
+    }
+  },
+  "extends": "expo/tsconfig.base",
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}

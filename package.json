@@ -18,9 +18,6 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
     "@shopify/flash-list": "1.6.4",
-    "@tensorflow-models/mobilenet": "2.1.1",
-    "@tensorflow/tfjs": "4.20.0",
-    "@tensorflow/tfjs-react-native": "1.0.0",
     "expo": "51.0.21",
     "expo-background-fetch": "12.0.1",
     "expo-camera": "15.0.16",
@@ -36,6 +33,7 @@
     "expo-task-manager": "11.8.2",
     "jpeg-js": "0.4.4",
     "lucide-react-native": "0.408.0",
+    "onnxruntime-react-native": "^1.22.0",
     "react": "18.2.0",
     "react-native": "0.74.3",
     "react-native-fs": "2.20.0",
@@ -50,6 +48,7 @@
     "@babel/core": "^7.20.0",
     "@types/react": "~18.2.45",
     "babel-plugin-module-resolver": "5.0.2",
+    "eas-cli": "^16.18.0",
     "typescript": "5.3.3"
   }
 }

@@ -1,4 +1,4 @@
-// File: babel.config.js (Definitive Final Version)
+// File: babel.config.js (Hardened Version)
 module.exports = function (api) {
   api.cache(true);
   return {

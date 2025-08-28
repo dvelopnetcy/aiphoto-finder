@@ -1,38 +1,49 @@
-// File: src/hooks/useIndexingStatus.ts
+// File: src/hooks/useIndexingStatus.ts (Final Corrected Async Version)
 
-import { create } from 'zustand';
+import { useState, useEffect, useCallback } from 'react';
+import { database } from '@/services/database';
+import { AppState } from 'react-native';
 
-interface IndexingState {
-  isIndexing: boolean;
-  indexedCount: number;
-  totalCount: number;
-  progress: number; // 0 to 1
-  startInitialIndexing: () => void;
-  updateProgress: (indexed: number, total: number) => void;
-}
+export const useIndexingStatus = () => {
+  const [totalCount, setTotalCount] = useState(0);
+  const [indexedCount, setIndexedCount] = useState(0);
+  const [isScanComplete, setIsScanComplete] = useState(false);
 
-// We import the service here to keep the UI separate from the logic
-import { indexingService } from '@/services/indexingService';
+  // We use useCallback to create a stable async function reference.
+  const checkStatus = useCallback(async () => {
+    try {
+      const { total, indexed, scanComplete } = await database.getIndexingStatusCounts();
+      setTotalCount(total);
+      setIndexedCount(indexed);
+      setIsScanComplete(scanComplete);
+    } catch (error) {
+      console.error("Failed to check indexing status:", error);
+    }
+  }, []);
 
-export const useIndexingStatus = create<IndexingState>((set, get) => ({
-  isIndexing: false,
-  indexedCount: 0,
-  totalCount: 0,
-  progress: 0,
-  updateProgress: (indexed, total) => {
-    set({
-      indexedCount: indexed,
-      totalCount: total,
-      progress: total > 0 ? indexed / total : 0,
+  useEffect(() => {
+    checkStatus(); // Initial check
+
+    const interval = setInterval(checkStatus, 3000); // Poll every 3 seconds
+
+    // --- THIS IS THE FIX ---
+    // The event listener now correctly handles the async checkStatus function.
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        console.log("App has come to the foreground. Re-checking indexing status.");
+        checkStatus();
+      }
     });
-  },
-  startInitialIndexing: async () => {
-    if (get().isIndexing || get().totalCount > 0) return; // Don't re-index if already started or done
+    // --- END OF FIX ---
 
-    set({ isIndexing: true });
-    await indexingService.startIndexing(({ indexed, total }) => {
-      get().updateProgress(indexed, total);
-    });
-    set({ isIndexing: false });
-  },
-}));
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [checkStatus]); // Depend on the stable checkStatus function
+
+  const progress = totalCount > 0 ? indexedCount / totalCount : 0;
+  const isIndexing = isScanComplete && progress < 1;
+
+  return { progress, indexedCount, totalCount, isIndexing };
+};

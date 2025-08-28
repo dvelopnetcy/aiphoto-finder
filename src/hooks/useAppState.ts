@@ -1,4 +1,4 @@
-// File: src/hooks/useAppState.ts
+// File: src/hooks/useAppState.ts (Simplified)
 
 import { create } from 'zustand';
 
@@ -8,6 +8,6 @@ interface AppState {
 }
 
 export const useAppState = create<AppState>((set) => ({
-  hasCompletedOnboarding: false, // Default value
+  hasCompletedOnboarding: false,
   setHasCompletedOnboarding: (status) => set({ hasCompletedOnboarding: status }),
 }));

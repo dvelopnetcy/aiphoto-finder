@@ -23,7 +23,7 @@ export const useIndexingStatus = () => {
   }, [checkStatus]);
 
   const progress = totalCount > 0 ? indexedCount / totalCount : 0;
-  const isIndexing = isScanComplete && progress < 1;
+  const isIndexing = !isScanComplete || progress < 1;
 
   return { progress, indexedCount, totalCount, isIndexing, isScanComplete };
 };

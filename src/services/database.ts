@@ -1,4 +1,4 @@
-// File: src/services/database.ts (Corrected Version)
+// File: src/services/database.ts (Corrected Types)
 
 import * as SQLite from 'expo-sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -6,18 +6,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const db = SQLite.openDatabaseSync('photos.db');
 const IS_INITIAL_SCAN_COMPLETE_KEY = 'isInitialScanComplete';
 
-export interface PhotoRecord {
-  id: string; // MediaLibrary Asset ID
-  uri: string;
-  created_at: number;
-  width: number;
-  height: number;
-}
-
+export interface PhotoRecord { id: string; uri: string; created_at: number; width: number; height: number; }
 type PreparedStatement = ReturnType<typeof db.prepareSync>;
 let addPhotoStatement: PreparedStatement | null = null;
 
-const initDatabase = () => {
+const initDatabase = (): void => { // <-- FIX: Added return type
   db.execSync(`
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS photos (
@@ -32,13 +25,11 @@ const initDatabase = () => {
   addPhotoStatement = db.prepareSync('INSERT OR REPLACE INTO photos (id, uri, created_at, width, height) VALUES (?, ?, ?, ?, ?)');
 };
 
-const addPhoto = (photo: PhotoRecord) => {
+const addPhoto = (photo: PhotoRecord): void => { // <-- FIX: Added return type
   if (!addPhotoStatement) { throw new Error("Database not initialized."); }
   addPhotoStatement.executeSync([photo.id, photo.uri, photo.created_at, photo.width, photo.height]);
 };
 
-// --- THIS IS THE FIX ---
-// This function is now async and correctly awaits the result from AsyncStorage.
 const getIndexingStatusCounts = async (): Promise<{ total: number; indexed: number; scanComplete: boolean }> => {
   const totalResult = db.getFirstSync<{ 'COUNT(*)': number }>('SELECT COUNT(*) FROM photos');
   const indexedResult = db.getFirstSync<{ 'COUNT(*)': number }>("SELECT COUNT(*) FROM photos WHERE embedding_status = 'COMPLETE' OR embedding_status = 'FAILED'");
@@ -49,26 +40,18 @@ const getIndexingStatusCounts = async (): Promise<{ total: number; indexed: numb
     scanComplete: scanCompleteValue === 'true',
   };
 };
-// --- END OF FIX ---
 
 const getPendingPhotos = (limit: number): PhotoRecord[] => {
   return db.getAllSync<PhotoRecord>("SELECT * FROM photos WHERE embedding_status = 'PENDING' ORDER BY created_at DESC LIMIT ?", [limit]);
 };
 
-const addEmbedding = (photoId: string, vector: number[], modelVersion = 'mobilenet_v2_quant') => {
+const addEmbedding = (photoId: string, vector: number[], modelVersion = 'mobilenet_v2_quant'): void => { // <-- FIX: Added return type
   const buffer = new Float32Array(vector).buffer;
   db.runSync('INSERT OR REPLACE INTO embeddings (photo_id, vector, model_version) VALUES (?, ?, ?)', [photoId, new Uint8Array(buffer), modelVersion]);
 };
 
-const updatePhotoEmbeddingStatus = (photoId: string, status: 'PENDING' | 'COMPLETE' | 'FAILED') => {
+const updatePhotoEmbeddingStatus = (photoId: string, status: 'PENDING' | 'COMPLETE' | 'FAILED'): void => { // <-- FIX: Added return type
   db.runSync('UPDATE photos SET embedding_status = ? WHERE id = ?', [status, photoId]);
 };
 
-export const database = {
-  init: initDatabase,
-  addPhoto,
-  getIndexingStatusCounts,
-  getPendingPhotos,
-  addEmbedding,
-  updatePhotoEmbeddingStatus,
-};
+export const database = { init: initDatabase, addPhoto, getIndexingStatusCounts, getPendingPhotos, addEmbedding, updatePhotoEmbeddingStatus };

@@ -4,17 +4,13 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // This is the full, correct configuration for our '@/' alias
       [
         'babel-plugin-module-resolver',
         {
-          alias: {
-            // This tells Babel that '@/' means 'src/'
-            '@': './src',
-          },
+          alias: { '@': './src' },
         },
       ],
-      // This plugin is required by react-native-reanimated
+      // CRITICAL: react-native-reanimated/plugin must be the last plugin.
       'react-native-reanimated/plugin',
     ],
   };

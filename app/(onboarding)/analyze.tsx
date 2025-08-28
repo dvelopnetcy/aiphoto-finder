@@ -1,6 +1,6 @@
-// File: app/(onboarding)/analyze.tsx (The "Start Button")
+// File: app/(onboarding)/analyze.tsx (The User's "Start Button")
 
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,41 +8,33 @@ import { useAppState } from '@/hooks/useAppState';
 import { startBackgroundProcessing } from '@/services/backgroundTaskService';
 import { useTheme } from '@/hooks/useTheme';
 import { spacing, typography } from '@/constants/Theme';
-import { ProgressRing } from '@/components/ui/ProgressRing'; // Assuming you have a progress ring
+import { Button } from '@/components/ui/Button';
 
 export default function AnalyzeScreen() {
   const { theme } = useTheme();
   const { setHasCompletedOnboarding } = useAppState();
+  const [isStarting, setIsStarting] = useState(false);
 
-  useEffect(() => {
-    const analyzeAndComplete = async () => {
-      console.log('Onboarding complete. Starting background processing...');
-      
-      // 1. Kick off the background task
-      await startBackgroundProcessing();
-      
-      // 2. Mark onboarding as complete in async storage
-      await AsyncStorage.setItem('onboardingComplete', 'true');
-      
-      // 3. Update the global state
-      setHasCompletedOnboarding(true);
-
-      // 4. Navigate to the main app after a short delay
-      setTimeout(() => {
-        router.replace('/(tabs)/search');
-      }, 1500); // Give the user a moment to see the "complete" state
-    };
-
-    analyzeAndComplete();
-  }, [setHasCompletedOnboarding]);
+  const handleStart = async () => {
+    setIsStarting(true);
+    await startBackgroundProcessing();
+    await AsyncStorage.setItem('onboardingComplete', 'true');
+    setHasCompletedOnboarding(true);
+    router.replace('/(tabs)/search');
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ProgressRing progress={1} />
-      <Text style={[styles.title, { color: theme.text }]}>Setup Complete!</Text>
+      <Text style={[styles.title, { color: theme.text }]}>Ready to Go!</Text>
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-        Your photos will now be indexed in the background. You can start searching right away.
+        Tap below to start the initial indexing. This is a one-time process that runs in the background.
       </Text>
+      <View style={styles.spacer} />
+      <Button 
+        title={isStarting ? "Starting..." : "Start Indexing"} 
+        onPress={handleStart}
+        disabled={isStarting}
+      />
     </View>
   );
 }
@@ -54,13 +46,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.lg,
   },
-  title: {
-    ...typography.title1,
-    marginTop: spacing.lg,
-  },
+  title: { ...typography.title1 },
   subtitle: {
     ...typography.body,
     textAlign: 'center',
     marginTop: spacing.md,
   },
+  spacer: { flex: 1 },
 });

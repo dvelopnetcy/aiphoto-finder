@@ -13,22 +13,24 @@
       "backgroundColor": "#121212"
     },
     "assetBundlePatterns": ["**/*"],
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.company.aiphotofinder"
     },
+
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/adaptive-icon.png",
         "backgroundColor": "#121212"
       },
       "package": "com.company.aiphotofinder",
-      "versionCode": 2,
       "permissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_EXTERNAL_STORAGE"
       ]
     },
+
     "plugins": [
       "expo-router",
       "expo-dev-client",
@@ -66,9 +68,11 @@
         }
       ]
     ],
+
     "experiments": {
       "typedRoutes": true
     },
+
     "extra": {
       "eas": {
         "projectId": "c5075ff0-cb71-47c5-81d7-f19778222b2b"

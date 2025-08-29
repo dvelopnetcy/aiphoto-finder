@@ -1,7 +1,7 @@
 // app/entry.js
-// Πρέπει να τρέχουν πριν από Ο,ΤΙΔΗΠΟΤΕ άλλο
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-// αφήνουμε το Expo Router να κάνει boot
+console.log('>>> app/entry loaded'); // Πρέπει να το δεις στην κονσόλα
+
 import 'expo-router/entry';

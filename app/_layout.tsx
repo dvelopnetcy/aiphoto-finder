@@ -1,18 +1,22 @@
-// File: app/_layout.tsx (The App's Main Traffic Cop)
+// File: app/_layout.tsx (final)
 
-// MUST be first: ensure native initialization for RNGH & Reanimated
-import 'react-native-gesture-handler';
-import 'react-native-reanimated';
+// ⚠️ ΣΗΜΕΙΩΣΗ: ΔΕΝ βάζουμε εδώ τα
+// import 'react-native-gesture-handler'
+// import 'react-native-reanimated'
+// Τα έχουμε μόνο στο app/entry.js
 
 import React, { useEffect } from 'react';
-import { SplashScreen, Stack, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
+
 import { AppStateProvider, AppStateContext } from '@/providers/AppStateProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { useAppState } from '@/hooks/useAppState';
 import { loadFlags } from '@/services/featureFlags';
+import { NativeModules } from 'react-native';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+// Κρατάμε το splash μέχρι να φορτώσουν τα assets
 SplashScreen.preventAutoHideAsync();
 
 function RootLayout() {
@@ -22,24 +26,18 @@ function RootLayout() {
 
   useEffect(() => {
     if (isAppReady) {
-      // Hide the splash screen once the app is ready
       SplashScreen.hideAsync();
 
-      // Core navigation logic
       if (hasCompletedOnboarding) {
-        // If user is onboarded, send them to the main app
         router.replace('/(tabs)/search');
       } else {
-        // If user is not onboarded, send them to the onboarding flow
         router.replace('/(onboarding)');
       }
     }
   }, [isAppReady, hasCompletedOnboarding, router]);
 
-  // If the app is not ready, render nothing (splash stays visible)
   if (!isAppReady) return null;
 
-  // Navigator switching between the main sections
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(onboarding)" />
@@ -56,19 +54,23 @@ export default function App() {
     'Inter-Bold': require('../assets/fonts/Inter-Bold.ttf'),
   });
 
-  // Load feature flags once at bootstrap (no UI changes)
+  // Feature flags
   useEffect(() => {
     loadFlags();
   }, []);
 
-  // Keep splash until fonts are loaded
+  // Μικρό debug για βεβαιότητα ότι υπάρχει το native Reanimated
+  useEffect(() => {
+    // Πρέπει να εκτυπώσει true
+    console.log('Has NativeReanimated:', !!NativeModules.NativeReanimated);
+  }, []);
+
   useEffect(() => {
     if (error) throw error;
   }, [error]);
 
   if (!fontsLoaded) return null;
 
-  // Providers wrap the entire app
   return (
     <ThemeProvider>
       <AppStateProvider>

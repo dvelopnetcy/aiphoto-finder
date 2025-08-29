@@ -1,10 +1,10 @@
-// File: src/services/aiService.ts (No expo-crypto; bundler-safe)
+// File: src/services/aiService.ts
 
 import { InferenceSession, Tensor } from 'onnxruntime-react-native';
 import * as FileSystem from 'expo-file-system';
 import { decode as decodeJpeg } from 'jpeg-js';
+import { get as getFlags } from '@/services/featureFlags';
 
-// --- Model info (versioned path; checksum off for now) ---
 const MODEL_INFO = {
   name: 'mobilenetv2-7',
   version: '1.0.0',
@@ -14,48 +14,44 @@ const MODEL_INFO = {
 const MODEL_DIR = `${FileSystem.cacheDirectory}models/mobilenet-v2/${MODEL_INFO.version}/`;
 const MODEL_URI = `${MODEL_DIR}${MODEL_INFO.name}.onnx`;
 
-const MODEL_INPUT_SIZE = 224; // 224x224
-const CHANNELS = 3;           // RGB
+const MODEL_INPUT_SIZE = 224;
+const CHANNELS = 3;
 
 let session: InferenceSession | null = null;
 
-// ---------------- Helpers ----------------
 async function ensureDir(path: string) {
   try {
     const info = await FileSystem.getInfoAsync(path);
-    if (!info.exists) {
-      await FileSystem.makeDirectoryAsync(path, { intermediates: true });
-    }
+    if (!info.exists) await FileSystem.makeDirectoryAsync(path, { intermediates: true });
   } catch {
     // ignore
   }
 }
 
-// Base64 -> Uint8Array (no Buffer usage)
+// Base64 -> Uint8Array (χωρίς Buffer)
 function base64ToUint8Array(base64: string): Uint8Array {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
   let str = '';
   let i = 0;
   base64 = base64.replace(/[^A-Za-z0-9+/=]/g, '');
   while (i < base64.length) {
-    const enc1 = chars.indexOf(base64.charAt(i++));
-    const enc2 = chars.indexOf(base64.charAt(i++));
-    const enc3 = chars.indexOf(base64.charAt(i++));
-    const enc4 = chars.indexOf(base64.charAt(i++));
-    const chr1 = (enc1 << 2) | (enc2 >> 4);
-    const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-    const chr3 = ((enc3 & 3) << 6) | enc4;
-    str += String.fromCharCode(chr1);
-    if (enc3 !== 64) str += String.fromCharCode(chr2);
-    if (enc4 !== 64) str += String.fromCharCode(chr3);
+    const e1 = chars.indexOf(base64.charAt(i++));
+    const e2 = chars.indexOf(base64.charAt(i++));
+    const e3 = chars.indexOf(base64.charAt(i++));
+    const e4 = chars.indexOf(base64.charAt(i++));
+    const c1 = (e1 << 2) | (e2 >> 4);
+    const c2 = ((e2 & 15) << 4) | (e3 >> 2);
+    const c3 = ((e3 & 3) << 6) | e4;
+    str += String.fromCharCode(c1);
+    if (e3 !== 64) str += String.fromCharCode(c2);
+    if (e4 !== 64) str += String.fromCharCode(c3);
   }
-  const len = str.length;
-  const bytes = new Uint8Array(len);
-  for (let j = 0; j < len; j++) bytes[j] = str.charCodeAt(j);
-  return bytes;
+  const out = new Uint8Array(str.length);
+  for (let j = 0; j < str.length; j++) out[j] = str.charCodeAt(j);
+  return out;
 }
 
-// Nearest-neighbor resize RGBA -> 224x224 RGB, normalize to [0,1], CHW
+// Nearest-neighbor resize RGBA -> 224x224 RGB, normalize [0..1], CHW
 function resizeAndNormalizeRGBAtoCHW(
   rgba: Uint8Array,
   srcW: number,
@@ -71,15 +67,11 @@ function resizeAndNormalizeRGBAtoCHW(
     const sy = Math.min(srcH - 1, Math.floor(y * yRatio));
     for (let x = 0; x < dstW; x++) {
       const sx = Math.min(srcW - 1, Math.floor(x * xRatio));
-      const srcIdx = (sy * srcW + sx) * 4; // RGBA
-      const r = rgba[srcIdx];
-      const g = rgba[srcIdx + 1];
-      const b = rgba[srcIdx + 2];
-
-      const dstIndex = y * dstW + x;
-      out[0 * dstH * dstW + dstIndex] = r / 255;
-      out[1 * dstH * dstW + dstIndex] = g / 255;
-      out[2 * dstH * dstW + dstIndex] = b / 255;
+      const idx = (sy * srcW + sx) * 4; // RGBA
+      const dst = y * dstW + x;
+      out[0 * dstH * dstW + dst] = rgba[idx] / 255;
+      out[1 * dstH * dstW + dst] = rgba[idx + 1] / 255;
+      out[2 * dstH * dstW + dst] = rgba[idx + 2] / 255;
     }
   }
   return out;
@@ -87,48 +79,33 @@ function resizeAndNormalizeRGBAtoCHW(
 
 async function downloadModelIfNeeded(): Promise<string> {
   await ensureDir(MODEL_DIR);
-
   const info = await FileSystem.getInfoAsync(MODEL_URI);
-  if (info.exists && info.size && info.size > 500_000) {
-    return MODEL_URI;
-  }
+  if (info.exists && info.size && info.size > 500_000) return MODEL_URI;
 
   const tmp = `${MODEL_URI}.download`;
   try { await FileSystem.deleteAsync(tmp, { idempotent: true }); } catch {}
   const res = await FileSystem.downloadAsync(MODEL_INFO.url, tmp);
   if (!res || (res.status && res.status >= 400)) {
-    throw new Error(`Model download failed with status ${res?.status ?? 'unknown'}`);
+    throw new Error(`Model download failed: ${res?.status ?? 'unknown'}`);
   }
   await FileSystem.moveAsync({ from: tmp, to: MODEL_URI });
   return MODEL_URI;
 }
 
-// ---------------- Public API ----------------
 export async function loadModel(): Promise<InferenceSession> {
   if (session) return session;
-
   console.log('[aiService] Loading ONNX model…');
   const modelPath = await downloadModelIfNeeded();
-
-  session = await InferenceSession.create(modelPath, {
-    // executionProviders: ['cpu'], // try 'nnapi' on Android if you benchmark it faster
-    // graphOptimizationLevel: 'all',
-  });
-
+  session = await InferenceSession.create(modelPath, {});
   console.log('[aiService] ONNX model ready');
   return session;
 }
 
 async function imageToTensor(uri: string): Promise<Tensor> {
-  const base64 = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
   const u8 = base64ToUint8Array(base64);
-
   const decoded = decodeJpeg(u8, { useTArray: true });
-  if (!decoded || !decoded.data || !decoded.width || !decoded.height) {
-    throw new Error('Failed to decode JPEG');
-  }
+  if (!decoded?.data || !decoded.width || !decoded.height) throw new Error('Failed to decode JPEG');
 
   const chw = resizeAndNormalizeRGBAtoCHW(
     decoded.data as unknown as Uint8Array,
@@ -137,11 +114,25 @@ async function imageToTensor(uri: string): Promise<Tensor> {
     MODEL_INPUT_SIZE,
     MODEL_INPUT_SIZE
   );
-
   return new Tensor('float32', chw, [1, CHANNELS, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE]); // NCHW
 }
 
 export async function generateEmbedding(photoUri: string): Promise<number[]> {
+  // Feature flag: CLIP μονοπάτι (με require για να αποφύγουμε TS/Metro θέματα)
+  const flags = getFlags();
+  if (flags.USE_CLIP_MODEL) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const mod: any = require('@/services/clipService');
+      if (mod?.clipService?.generateEmbedding) {
+        return await mod.clipService.generateEmbedding(photoUri);
+      }
+    } catch (e) {
+      console.warn('[aiService] CLIP path not available, fallback to MobileNet:', e);
+    }
+  }
+
+  // Default: MobileNet
   const s = await loadModel();
   const input = await imageToTensor(photoUri);
   const feeds: Record<string, Tensor> = { [s.inputNames[0]]: input };

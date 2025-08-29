@@ -1,12 +1,12 @@
 // File: app/_layout.tsx (The App's Main Traffic Cop)
 
 import React, { useEffect } from 'react';
-import { SplashScreen, Stack } from 'expo-router';
+import { SplashScreen, Stack, useRouter } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { AppStateProvider, AppStateContext } from '@/providers/AppStateProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { useAppState } from '@/hooks/useAppState';
-import { useRouter } from 'expo-router';
+import { loadFlags } from '@/services/featureFlags';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -20,8 +20,8 @@ function RootLayout() {
     if (isAppReady) {
       // Hide the splash screen once the app is ready
       SplashScreen.hideAsync();
-      
-      // This is the core navigation logic
+
+      // Core navigation logic
       if (hasCompletedOnboarding) {
         // If user is onboarded, send them to the main app
         router.replace('/(tabs)/search');
@@ -32,12 +32,12 @@ function RootLayout() {
     }
   }, [isAppReady, hasCompletedOnboarding, router]);
 
-  // If the app is not ready, we render nothing (the splash screen is visible)
+  // If the app is not ready, render nothing (splash stays visible)
   if (!isAppReady) {
     return null;
   }
 
-  // This is the navigator that will switch between the two main sections of your app.
+  // Navigator switching between the main sections
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(onboarding)" />
@@ -54,7 +54,12 @@ export default function App() {
     'Inter-Bold': require('../assets/fonts/Inter-Bold.ttf'),
   });
 
-  // It's good practice to show the splash screen until fonts are loaded.
+  // Load feature flags once at bootstrap (no UI changes)
+  useEffect(() => {
+    loadFlags();
+  }, []);
+
+  // Keep splash until fonts are loaded
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -63,7 +68,7 @@ export default function App() {
     return null;
   }
 
-  // The AppStateProvider and ThemeProvider wrap the entire app.
+  // Providers wrap the entire app
   return (
     <ThemeProvider>
       <AppStateProvider>

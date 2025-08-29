@@ -15,7 +15,6 @@ const err = (...args: any[]) => console.error('[aiService]', ...args);
 const MODEL_NAME = 'mobilenetv2-7.onnx';
 
 // 1) Προτιμάμε asset μέσα στην εφαρμογή
-// @ts-expect-error: importing non-image asset (Metro asset id)
 const MODEL_ASSET_ID = require('../../assets/models/mobilenetv2-7.onnx');
 
 // 2) Fallback URLs αν (για dev) λείπει το asset

@@ -3,7 +3,7 @@
 import { InferenceSession, Tensor } from 'onnxruntime-react-native';
 import * as FileSystem from 'expo-file-system';
 import { decode as decodeJpeg } from 'jpeg-js';
-import { get as getFlags } from '@/services/featureFlags';
+import { getFlags } from '@/services/featureFlags'; // <-- align με το services/featureFlags
 
 const MODEL_INFO = {
   name: 'mobilenetv2-7',
@@ -28,7 +28,7 @@ async function ensureDir(path: string) {
   }
 }
 
-// Base64 -> Uint8Array (χωρίς Buffer)
+// Base64 -> Uint8Array (χωρίς Buffer/atob, ασφαλές για Hermes)
 function base64ToUint8Array(base64: string): Uint8Array {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
   let str = '';
@@ -83,7 +83,9 @@ async function downloadModelIfNeeded(): Promise<string> {
   if (info.exists && info.size && info.size > 500_000) return MODEL_URI;
 
   const tmp = `${MODEL_URI}.download`;
-  try { await FileSystem.deleteAsync(tmp, { idempotent: true }); } catch {}
+  try {
+    await FileSystem.deleteAsync(tmp, { idempotent: true });
+  } catch {}
   const res = await FileSystem.downloadAsync(MODEL_INFO.url, tmp);
   if (!res || (res.status && res.status >= 400)) {
     throw new Error(`Model download failed: ${res?.status ?? 'unknown'}`);
@@ -102,13 +104,20 @@ export async function loadModel(): Promise<InferenceSession> {
 }
 
 async function imageToTensor(uri: string): Promise<Tensor> {
-  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  // Διάβασε το αρχείο ως base64
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
   const u8 = base64ToUint8Array(base64);
+
+  // JPEG → RGBA
   const decoded = decodeJpeg(u8, { useTArray: true });
-  if (!decoded?.data || !decoded.width || !decoded.height) throw new Error('Failed to decode JPEG');
+  if (!decoded?.data || !decoded.width || !decoded.height) {
+    throw new Error('Failed to decode JPEG');
+  }
 
   const chw = resizeAndNormalizeRGBAtoCHW(
-    decoded.data as unknown as Uint8Array,
+    decoded.data as Uint8Array,
     decoded.width,
     decoded.height,
     MODEL_INPUT_SIZE,
@@ -118,7 +127,7 @@ async function imageToTensor(uri: string): Promise<Tensor> {
 }
 
 export async function generateEmbedding(photoUri: string): Promise<number[]> {
-  // Feature flag: CLIP μονοπάτι (με require για να αποφύγουμε TS/Metro θέματα)
+  // Feature flag: CLIP μονοπάτι (dynamic require για να μη «σπάει» το bundling αν λείπει)
   const flags = getFlags();
   if (flags.USE_CLIP_MODEL) {
     try {

@@ -8,9 +8,26 @@ node_modules/
 .expo/
 .expo-shared/
 
-# build artifacts (προαιρετικά, αν τρέξεις prebuild τοπικά)
+# build artifacts (αν τρέξεις prebuild τοπικά)
 android/
 ios/
+web-build/
+dist/
+build/
+
+# IDE / tooling
+.vscode/
+.idea/
+*.iml
+
+# Android local stuff
+.gradle/
+*.jks
+*.keystore
+
+# iOS certs (για ασφάλεια)
+*.p12
+*.mobileprovision
 
 # OS junk
 .DS_Store
@@ -19,6 +36,7 @@ Thumbs.db
 # env files
 .env
 *.env
+.env.*.local
 
 # logs
 npm-debug.log*

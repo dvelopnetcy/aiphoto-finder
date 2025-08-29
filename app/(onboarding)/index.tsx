@@ -1,15 +1,28 @@
-// File: app/(onboarding)/index.tsx (UI Restored)
-
-import { View, Text, StyleSheet } from 'react-native';
+// app/(onboarding)/index.tsx
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { spacing, typography } from '@/constants/Theme';
+import { aiService } from '@/services/aiService';
 
 export default function OnboardingScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+
+  const onGetStarted = useCallback(async () => {
+    const ok = await aiService.ensureMediaPermission();
+    if (!ok) {
+      Alert.alert(
+        'Permission required',
+        'Πήγαινε Settings → Apps → AI Photo Finder (Development) → Permissions → Photos & videos → Allow all.'
+      );
+      return;
+    }
+    router.push('/analyze'); // εδώ συνεχίζεις στο screen που κάνει το scan
+  }, [router]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -19,7 +32,7 @@ export default function OnboardingScreen() {
         Works offline. 100% private. Your photos never leave your device.
       </Text>
       <View style={styles.spacer} />
-      <Button title="Get Started" onPress={() => router.push('/analyze')} />
+      <Button title="Get Started" onPress={onGetStarted} />
     </View>
   );
 }

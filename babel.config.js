@@ -10,8 +10,7 @@ module.exports = function (api) {
           alias: { '@': './src' },
         },
       ],
-      'expo-router/babel',
-      // MUST be last:
+      // ΠΡΕΠΕΙ να είναι το τελευταίο:
       'react-native-reanimated/plugin',
     ],
   };

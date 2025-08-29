@@ -12,13 +12,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#121212"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.company.aiphotofinder",
-      "deploymentTarget": "13.4"
+      "bundleIdentifier": "com.company.aiphotofinder"
     },
     "android": {
       "adaptiveIcon": {

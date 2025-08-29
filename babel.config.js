@@ -1,4 +1,4 @@
-// File: babel.config.js (Hardened Version)
+// babel.config.js
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -10,7 +10,8 @@ module.exports = function (api) {
           alias: { '@': './src' },
         },
       ],
-      // CRITICAL: react-native-reanimated/plugin must be the last plugin.
+      'expo-router/babel',
+      // MUST be last:
       'react-native-reanimated/plugin',
     ],
   };

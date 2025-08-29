@@ -1,29 +1,56 @@
-// File: src/hooks/useIndexingStatus.ts (Final Corrected Version)
-import { useState, useEffect, useCallback } from 'react';
+// File: src/hooks/useIndexingStatus.ts (Hardened, same behavior)
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { database } from '@/services/database';
-import { AppState } from 'react-native';
 
-export const useIndexingStatus = () => {
-  const [totalCount, setTotalCount] = useState(0);
-  const [indexedCount, setIndexedCount] = useState(0);
-  const [isScanComplete, setIsScanComplete] = useState(false);
+type StatusState = { total: number; indexed: number; scanComplete: boolean };
 
-  const checkStatus = useCallback(async () => {
-    const { total, indexed, scanComplete } = await database.getIndexingStatusCounts();
-    setTotalCount(total); setIndexedCount(indexed); setIsScanComplete(scanComplete);
+export function useIndexingStatus(pollMs = 3000) {
+  const [state, setState] = useState<StatusState>({ total: 0, indexed: 0, scanComplete: false });
+
+  const mounted = useRef(true);
+  const inFlight = useRef(false);
+
+  const refresh = useCallback(async () => {
+    if (inFlight.current) return; // avoid overlapping calls
+    inFlight.current = true;
+    try {
+      const res = await database.getIndexingStatusCounts();
+      if (mounted.current) setState(res);
+    } catch {
+      // swallow — UI shouldn't crash if DB read fails momentarily
+    } finally {
+      inFlight.current = false;
+    }
   }, []);
 
   useEffect(() => {
-    checkStatus();
-    const interval = setInterval(checkStatus, 3000);
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') { checkStatus(); }
+    mounted.current = true;
+    refresh();
+
+    const interval = setInterval(refresh, pollMs);
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (next === 'active') refresh();
     });
-    return () => { clearInterval(interval); subscription.remove(); };
-  }, [checkStatus]);
 
-  const progress = totalCount > 0 ? indexedCount / totalCount : 0;
-  const isIndexing = !isScanComplete || progress < 1;
+    return () => {
+      mounted.current = false;
+      clearInterval(interval);
+      sub.remove();
+    };
+  }, [refresh, pollMs]);
 
-  return { progress, indexedCount, totalCount, isIndexing, isScanComplete };
-};
+  const { total, indexed, scanComplete } = state;
+  const progress = total > 0 ? indexed / total : 0;
+  const isIndexing = !scanComplete || progress < 1;
+
+  return {
+    progress,
+    indexedCount: indexed,
+    totalCount: total,
+    isIndexing,
+    isScanComplete: scanComplete,
+    refresh, // optional manual trigger
+  };
+}

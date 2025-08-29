@@ -1,18 +1,24 @@
-// File: tsconfig.json (Definitive Final Version)
 {
+  "extends": "./node_modules/expo/tsconfig.base",
   "compilerOptions": {
-    // This tells TypeScript that our project's root is the 'src' directory
-    "baseUrl": "src",
-    // This defines the '@/' alias for TypeScript
-    "paths": {
-      "@/*": ["*"]
-    }
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "jsx": "react-native",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] }
   },
-  "extends": "expo/tsconfig.base",
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+  ],
+  "exclude": ["node_modules"]
 }

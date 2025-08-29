@@ -18,10 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.company.aiphotofinder",
-      "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "AI Photo Finder needs access to your photos to build a private, on-device search index.",
-        "NSMicrophoneUsageDescription": "AI Photo Finder needs access to your microphone for voice search. Your audio is processed on-device and is never recorded."
-      }
+      "deploymentTarget": "13.4"
     },
     "android": {
       "adaptiveIcon": {
@@ -31,15 +28,45 @@
       "package": "com.company.aiphotofinder",
       "versionCode": 2,
       "permissions": [
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.DETECT_SCREEN_CAPTURE",
-        "com.google.android.gms.permission.AD_ID"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE"
       ]
     },
     "plugins": [
       "expo-router",
-      "./plugins/withAndroidPackagingOptions.js"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "minSdkVersion": 24,
+            "kotlinVersion": "1.9.24",
+            "gradleProperties": {
+              "org.gradle.jvmargs": "-Xmx6g -XX:+UseParallelGC -Dkotlin.daemon.jvm.options=-Xmx2g",
+              "android.useAndroidX": "true",
+              "android.enableJetifier": "true",
+              "android.enableDexingArtifactTransform": "false"
+            },
+            "packagingOptions": {
+              "pickFirst": [
+                "**/libc++_shared.so",
+                "**/libonnxruntime.so",
+                "**/libonnxruntime4j_jni.so"
+              ],
+              "exclude": [
+                "META-INF/LICENSE",
+                "META-INF/DEPENDENCIES",
+                "META-INF/INDEX.LIST",
+                "META-INF/versions/**"
+              ]
+            }
+          },
+          "ios": {
+            "deploymentTarget": "13.4"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,5 +1,9 @@
 // File: app/_layout.tsx (The App's Main Traffic Cop)
 
+// MUST be first: ensure native initialization for RNGH & Reanimated
+import 'react-native-gesture-handler';
+import 'react-native-reanimated';
+
 import React, { useEffect } from 'react';
 import { SplashScreen, Stack, useRouter } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -33,9 +37,7 @@ function RootLayout() {
   }, [isAppReady, hasCompletedOnboarding, router]);
 
   // If the app is not ready, render nothing (splash stays visible)
-  if (!isAppReady) {
-    return null;
-  }
+  if (!isAppReady) return null;
 
   // Navigator switching between the main sections
   return (
@@ -64,9 +66,7 @@ export default function App() {
     if (error) throw error;
   }, [error]);
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  if (!fontsLoaded) return null;
 
   // Providers wrap the entire app
   return (
